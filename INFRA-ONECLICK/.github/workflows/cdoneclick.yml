@@ -1,0 +1,88 @@
+name: CD - oneclick
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'k8s/**'
+  workflow_dispatch:
+
+jobs:
+  INFRA-ONECLICK-DEPLOY:
+    runs-on: self-hosted
+
+    steps:
+      # ======================
+      # Checkout current repo
+      # ======================
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+
+      # ======================
+      # Setup cluster context
+      # ======================
+      - name: Apply Ingress, PV & Namespace
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl get ns
+          kubectl apply -f k8s/ingress/
+          kubectl get svc -n ingress-nginx
+          kubectl apply -f k8s/pv
+          kubectl get pv
+
+      # ======================
+      # MONITOR-LOGS
+      # ======================
+      - name: Checkout MONITOR-LOGS-MICROSERVICE
+        uses: actions/checkout@v4
+        with:
+          repository: awsdeployer/MONITOR-LOGS-MICROSERVICE
+          path: MONITOR-LOGS-MICROSERVICE
+
+      - name: Apply MONITOR-LOGS-MICROSERVICE manifests
+        run: |
+          kubectl apply -f MONITOR-LOGS-MICROSERVICE/backend/k8s/ --recursive
+          kubectl wait --for=condition=ready pod -l app=flask-monitor -n ashapp --timeout=180s
+
+      # ======================
+      # HISTORY-SERVICES
+      # ======================
+      - name: Checkout HISTORY-SERVICE-MICROSERVICE
+        uses: actions/checkout@v4
+        with:
+          repository: awsdeployer/HISTORY-SERVICE-MICROSERVICE
+          path: HISTORY-SERVICE-MICROSERVICE
+
+      - name: Apply HISTORY-SERVICES-MICROSERVICE manifests
+        run: |
+          kubectl apply -f HISTORY-SERVICE-MICROSERVICE/backend/k8s/ --recursive
+          kubectl wait --for=condition=ready pod -l app=history-service -n ashapp --timeout=180s
+
+      # ======================
+      # AWS-ASHAPP
+      # ======================
+      - name: Checkout AWS-CB-MICROSERVICE
+        uses: actions/checkout@v4
+        with:
+          repository: awsdeployer/AWS-CB-MICROSERVICE
+          path: AWS-CB-MICROSERVICE
+
+      - name: Apply AWS-CB-MICROSERVICE manifests
+        run: |
+          kubectl apply -f AWS-CB-MICROSERVICE/backend/k8s/ --recursive
+          kubectl wait --for=condition=ready pod -l app=flask-app -n ashapp --timeout=180s
+
+      # ======================
+      # AUTOMATIC-DEPLOYER
+      # ======================
+      - name: Checkout AUTODEPLOY-MICROSERVICE
+        uses: actions/checkout@v4
+        with:
+          repository: awsdeployer/AUTODEPLOY-MICROSERVICE
+          path: AUTODEPLOY-MICROSERVICE
+
+      - name: Apply AUTODEPLOY-MICROSERVICE manifests
+        run: |
+          kubectl apply -f AUTODEPLOY-MICROSERVICE/backend/k8s/ --recursive
+          kubectl wait --for=condition=ready pod -l app=deployer-app -n ashapp --timeout=180s
