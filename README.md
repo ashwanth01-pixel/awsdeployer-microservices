@@ -1,6 +1,3 @@
-ashwanth01-pixel: go through my rpo and detailily explain how it works from basic like how much microservice how abt each microservice work like that go, how a begginer if wanted to start what should do, and mainly remebr theese 5 of them will be in 5 different repo but in same organization so it will work like that only so acc to that give me evrything, what all are the tools used, and what all are the best practices followed for developing the app and also for devops devops make it more points and explain it in relevant to this
-
-GitHub Copilot: Here’s a detailed breakdown of your project, how it works, and guidance for beginners, with a focus on microservices, tools, best practices, and DevOps—tailored for a setup where each microservice is in its own repository within the same organization.
 
 ---
 
